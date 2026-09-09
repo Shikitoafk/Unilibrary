@@ -1,0 +1,120 @@
+---
+# Скопируй этот файл под именем <slug>.mdx — slug станет адресом /u/<slug>.
+# Схема проверяется при сборке: опечатка в поле уронит билд, а не сломает фильтр молча.
+
+name: Название университета
+city: Город
+country: Страна
+countryCode: US
+founded: 1900
+
+thesis: >-
+  Два-три предложения: чем этот университет является на самом деле и чем за это
+  приходится платить. Идёт на карточку в списке и в шапку страницы.
+
+accent: '#A4161A'       # институциональный цвет университета
+accentDark: '#E4736C'   # его же версия для тёмной темы, посветлее
+profile: 'под какой профиль читателя написаны разделы «Ты × универ» и вердикт'
+issue: 5                # номер выпуска в канале, необязательно
+updated: 2026-01-01
+
+# ---- поступление ----
+acceptanceRate: null          # число в процентах или null
+acceptanceNote: ''
+satRange: null                # [1400, 1550] или null
+actRange: null
+testPolicy: unknown           # required | optional | blind | unknown
+separateCollegeAdmission: false
+
+# ---- деньги, USD в год ----
+costOfAttendance: null        # [90000, 99000] или null
+meetsFullNeed: false
+aidForInternationals: false
+avgGrant: null
+avgPackage: null
+meritAid: false
+needBlind: false
+
+# ---- профиль ----
+strengths: []                 # ['биомедицина', 'инженерия']
+campusType: college town      # college town | big city | suburb | campus bubble
+climate: ''
+
+# Соответствие: 0 — не подходит, 4 — очень высокое.
+# Для admissions это не соответствие, а сложность: 4 = очень сложно.
+fit:
+  academic: { score: 0, note: '' }
+  research: { score: 0, note: '' }
+  intellectual: { score: 0, note: '' }
+  culture: { score: 0, note: '' }
+  financial: { score: 0, note: '' }
+  admissions: { score: 0, note: '' }
+
+sources:
+  official: []
+  data: []
+  reviews: []
+  news: []
+
+# Необязательно: предупреждение внизу страницы, если в разборе много вторичных
+# источников. Допускается HTML.
+# sourceCaveat: '<b>Про пометку ◇.</b> …'
+---
+
+<Section num="01" id="identity" title="Идентичность">
+
+<h3>История</h3>
+
+<Fact>
+<p>Проверяемое утверждение со ссылкой на первичный источник.<Src href="https://example.edu">example.edu</Src></p>
+</Fact>
+
+<Fact>
+<p>Утверждение, источник которого пока не подтверждён. <Unver /></p>
+</Fact>
+
+<Fact>
+<p>Утверждение, взятое у агрегатора, а не из первичного документа.<Src2>collegetransitions</Src2></p>
+</Fact>
+
+<Voice>
+<p>Прямая речь студента с Reddit или из университетской газеты.<Src href="https://www.reddit.com/r/example/">r/example</Src></p>
+</Voice>
+
+<Interp>
+<p>Твоя интерпретация: что из этого следует для читателя. Набирается гротеском,
+чтобы читатель видел — это не факт, а прочтение.</p>
+</Interp>
+
+<Unknown>
+<ul>
+<li>Вопрос, на который не нашлось ответа.</li>
+<li>Ещё один.</li>
+</ul>
+</Unknown>
+
+</Section>
+
+{/*
+Дальше по той же схеме. Обычный порядок разделов:
+02 Академика · 03 Исследования · 04 Жизнь на кампусе · 05 Поступление
+06 Ты × универ · 07 Деньги · 08 Что дальше · 09 Критика · 10 Вердикт
+
+Таблица оборачивается в <Tbl>, чтобы на телефоне скроллилась она, а не страница:
+
+<Tbl>
+<table>
+<caption>Подпись</caption>
+<thead><tr><th>Колонка</th><th class="n">Число</th></tr></thead>
+<tbody>
+<tr><td>Строка</td><td class="n">100</td></tr>
+</tbody>
+</table>
+</Tbl>
+
+Ссылка на другой разбор:
+
+<Xref>
+Сравнение с <b>NYUAD</b>. <a href="/u/nyuad">Открыть разбор NYUAD →</a>
+</Xref>
+*/}

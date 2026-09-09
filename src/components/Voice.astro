@@ -1,0 +1,8 @@
+---
+interface Props { label?: string }
+const { label = 'Голос студента' } = Astro.props;
+---
+<div class="blk voice">
+  <span class="tag">{label}</span>
+  <div class="blk-body"><slot /></div>
+</div>

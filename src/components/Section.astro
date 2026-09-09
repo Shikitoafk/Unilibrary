@@ -1,0 +1,14 @@
+---
+interface Props { num: string; id: string; title: string }
+const { num, id, title } = Astro.props;
+---
+<section id={id}>
+  <div class="sec-head">
+    <span class="num">{num}</span>
+    <h2>
+      {title}
+      <button class="copylink" data-anchor={id} type="button">Ссылка</button>
+    </h2>
+  </div>
+  <slot />
+</section>

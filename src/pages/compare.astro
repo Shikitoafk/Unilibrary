@@ -1,0 +1,148 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { usd, usdRange, pct, range, testPolicyLabel, fitNames, fitOrder } from '../lib/format';
+
+const unis = (await getCollection('universities')).sort((a, b) =>
+  a.data.name.localeCompare(b.data.name, 'ru')
+);
+
+const yes = (v: boolean) => (v ? 'да' : 'нет');
+---
+
+<Base title="Сравнение университетов" nav="compare">
+  <div class="cmp">
+    <div class="cmp-hero">
+      <h1>Сравнение</h1>
+      <p>
+        Одно измерение — одна строка. Оценки соответствия субъективны и написаны
+        под профиль каждого разбора; цифры — нет.
+      </p>
+    </div>
+
+    {unis.length < 2 && (
+      <p class="empty">
+        Пока в базе {unis.length === 1 ? 'один разбор' : 'нет разборов'} — сравнивать не с чем.
+        Таблица оживёт, как только появится второй.
+      </p>
+    )}
+
+    <div class="cmp-wrap">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th class="rowhead"></th>
+            {unis.map((u) => (
+              <th><a href={`/u/${u.id}`}>{u.data.name}</a></th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="group"><th class="rowhead">Общее</th>{unis.map(() => <td></td>)}</tr>
+          <tr>
+            <td class="rowhead">Город</td>
+            {unis.map((u) => <td>{u.data.city}, {u.data.country}</td>)}
+          </tr>
+          <tr>
+            <td class="rowhead">Основан</td>
+            {unis.map((u) => <td>{u.data.founded}</td>)}
+          </tr>
+          <tr>
+            <td class="rowhead">Тип кампуса</td>
+            {unis.map((u) => <td>{u.data.campusType}</td>)}
+          </tr>
+
+          <tr class="group"><th class="rowhead">Поступление</th>{unis.map(() => <td></td>)}</tr>
+          <tr>
+            <td class="rowhead">Процент приёма</td>
+            {unis.map((u) => <td>{pct(u.data.acceptanceRate)}</td>)}
+          </tr>
+          <tr>
+            <td class="rowhead">SAT, средние 50%</td>
+            {unis.map((u) => <td>{range(u.data.satRange)}</td>)}
+          </tr>
+          <tr>
+            <td class="rowhead">ACT, средние 50%</td>
+            {unis.map((u) => <td>{range(u.data.actRange)}</td>)}
+          </tr>
+          <tr>
+            <td class="rowhead">Тесты</td>
+            {unis.map((u) => <td>{testPolicyLabel[u.data.testPolicy]}</td>)}
+          </tr>
+          <tr>
+            <td class="rowhead">Приём по колледжам отдельно</td>
+            {unis.map((u) => (
+              <td class={u.data.separateCollegeAdmission ? 'no' : ''}>
+                {yes(u.data.separateCollegeAdmission)}
+              </td>
+            ))}
+          </tr>
+
+          <tr class="group"><th class="rowhead">Деньги</th>{unis.map(() => <td></td>)}</tr>
+          <tr>
+            <td class="rowhead">Стоимость года</td>
+            {unis.map((u) => <td>{usdRange(u.data.costOfAttendance)}</td>)}
+          </tr>
+          <tr>
+            <td class="rowhead">Помощь иностранцам</td>
+            {unis.map((u) => (
+              <td class={u.data.aidForInternationals ? 'yes' : 'no'}>
+                {yes(u.data.aidForInternationals)}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <td class="rowhead">Покрывает нужду на 100%</td>
+            {unis.map((u) => (
+              <td class={u.data.meetsFullNeed ? 'yes' : 'no'}>{yes(u.data.meetsFullNeed)}</td>
+            ))}
+          </tr>
+          <tr>
+            <td class="rowhead">Need-blind</td>
+            {unis.map((u) => (
+              <td class={u.data.needBlind ? 'yes' : ''}>{yes(u.data.needBlind)}</td>
+            ))}
+          </tr>
+          <tr>
+            <td class="rowhead">Merit-стипендии</td>
+            {unis.map((u) => (
+              <td class={u.data.meritAid ? 'yes' : 'no'}>{yes(u.data.meritAid)}</td>
+            ))}
+          </tr>
+          <tr>
+            <td class="rowhead">Средний грант</td>
+            {unis.map((u) => <td>{usd(u.data.avgGrant)}</td>)}
+          </tr>
+          <tr>
+            <td class="rowhead">Средний пакет помощи</td>
+            {unis.map((u) => <td>{usd(u.data.avgPackage)}</td>)}
+          </tr>
+
+          <tr class="group"><th class="rowhead">Соответствие</th>{unis.map(() => <td></td>)}</tr>
+          {fitOrder.map((key) => (
+            <tr>
+              <td class="rowhead">{fitNames[key]}</td>
+              {unis.map((u) => (
+                <td>
+                  <span class="cmp-meter">
+                    {[0, 1, 2, 3].map((i) => (
+                      <i class:list={[i < u.data.fit[key].score && 'f']}></i>
+                    ))}
+                  </span>
+                </td>
+              ))}
+            </tr>
+          ))}
+
+          <tr class="group"><th class="rowhead">Сильные направления</th>{unis.map(() => <td></td>)}</tr>
+          <tr>
+            <td class="rowhead">&nbsp;</td>
+            {unis.map((u) => (
+              <td style="white-space:normal;max-width:260px">{u.data.strengths.join(', ')}</td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</Base>

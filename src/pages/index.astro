@@ -1,0 +1,177 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { usdRange, pct, range, testPolicyLabel } from '../lib/format';
+
+const unis = (await getCollection('universities')).sort((a, b) =>
+  a.data.name.localeCompare(b.data.name, 'ru')
+);
+
+// Наборы для фильтров собираем из самих разборов, руками ничего не ведём.
+const countries = [...new Set(unis.map((u) => u.data.country))].sort();
+const strengths = [...new Set(unis.flatMap((u) => u.data.strengths))].sort((a, b) =>
+  a.localeCompare(b, 'ru')
+);
+---
+
+<Base title="Разборы университетов" nav="home">
+  <div class="home">
+    <div class="home-hero">
+      <h1>Разборы университетов, а не рейтинги</h1>
+      <p>
+        Каждый разбор отвечает на один вопрос: подойдёт ли тебе этот университет.
+        Не только требования и престиж — история, устройство учёбы, жизнь на кампусе,
+        деньги и то, кому здесь будет плохо.
+      </p>
+      <p class="home-count">
+        {unis.length}{' '}
+        {unis.length === 1 ? 'разбор' : unis.length < 5 ? 'разбора' : 'разборов'} ·
+        обновляется по мере выхода в канале
+      </p>
+    </div>
+
+    <div class="filters" role="group" aria-label="Фильтры">
+      {countries.length > 1 && (
+        <div class="fgroup">
+          <span>Страна</span>
+          <div class="chips">
+            {countries.map((c) => (
+              <button class="chip" type="button" data-filter="country" data-value={c} aria-pressed="false">{c}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div class="fgroup">
+        <span>Деньги</span>
+        <div class="chips">
+          <button class="chip" type="button" data-filter="flag" data-value="aid" aria-pressed="false">Помощь иностранцам</button>
+          <button class="chip" type="button" data-filter="flag" data-value="full" aria-pressed="false">Покрывает нужду на 100%</button>
+          <button class="chip" type="button" data-filter="flag" data-value="merit" aria-pressed="false">Есть merit-стипендии</button>
+          <button class="chip" type="button" data-filter="flag" data-value="needblind" aria-pressed="false">Need-blind</button>
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <span>Тесты</span>
+        <div class="chips">
+          <button class="chip" type="button" data-filter="test" data-value="required" aria-pressed="false">Обязательны</button>
+          <button class="chip" type="button" data-filter="test" data-value="optional" aria-pressed="false">По желанию</button>
+        </div>
+      </div>
+
+      {strengths.length > 0 && (
+        <div class="fgroup">
+          <span>Сильные направления</span>
+          <div class="chips">
+            {strengths.map((s) => (
+              <button class="chip" type="button" data-filter="strength" data-value={s} aria-pressed="false">{s}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button class="freset" type="button" id="reset">Сбросить</button>
+    </div>
+
+    <ul class="uni-list" id="list">
+      {unis.map((u) => {
+        const d = u.data;
+        return (
+          <li
+            class="uni-card"
+            data-country={d.country}
+            data-test={d.testPolicy}
+            data-strengths={d.strengths.join('|')}
+            data-aid={String(d.aidForInternationals)}
+            data-full={String(d.meetsFullNeed)}
+            data-merit={String(d.meritAid)}
+            data-needblind={String(d.needBlind)}
+          >
+            <div>
+              <div class="uc-rank">
+                <span class="dot" style={`background:${d.accent}`}></span>
+                <span>{d.city}, {d.country} · основан {d.founded}</span>
+              </div>
+              <h2><a href={`/u/${u.id}`}>{d.name}</a></h2>
+              <p class="uc-thesis">{d.thesis}</p>
+              <div class="uc-tags">
+                {d.strengths.map((s) => <span>{s}</span>)}
+                <span>{d.campusType}</span>
+              </div>
+            </div>
+
+            <div class="uc-stats">
+              <div class="uc-stat"><span>Приём</span><b>{pct(d.acceptanceRate)}</b></div>
+              <div class="uc-stat"><span>SAT, средние 50%</span><b>{range(d.satRange)}</b></div>
+              <div class="uc-stat"><span>Тесты</span><b>{testPolicyLabel[d.testPolicy]}</b></div>
+              <div class="uc-stat"><span>Стоимость года</span><b>{usdRange(d.costOfAttendance)}</b></div>
+              <div class="uc-stat">
+                <span>Нужда иностранцев</span>
+                <b>{d.meetsFullNeed && d.aidForInternationals ? '100%' : d.aidForInternationals ? 'частично' : 'нет'}</b>
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+
+    <p class="empty" id="empty" hidden>Под эти фильтры не подходит ни один разбор.</p>
+  </div>
+
+  <script>
+    const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('.chip'));
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.uni-card'));
+    const empty = document.getElementById('empty')!;
+    const reset = document.getElementById('reset')!;
+
+    function active(kind: string): string[] {
+      return chips
+        .filter((c) => c.dataset.filter === kind && c.getAttribute('aria-pressed') === 'true')
+        .map((c) => c.dataset.value!);
+    }
+
+    function apply() {
+      const countries = active('country');
+      const tests = active('test');
+      const strengths = active('strength');
+      const flags = active('flag');
+      let shown = 0;
+
+      for (const card of cards) {
+        const cardStrengths = (card.dataset.strengths || '').split('|').filter(Boolean);
+        const ok =
+          (!countries.length || countries.includes(card.dataset.country!)) &&
+          (!tests.length || tests.includes(card.dataset.test!)) &&
+          // выбранные направления должны быть у университета все сразу
+          strengths.every((s) => cardStrengths.includes(s)) &&
+          flags.every((f) => {
+            if (f === 'aid') return card.dataset.aid === 'true';
+            if (f === 'full') return card.dataset.full === 'true';
+            if (f === 'merit') return card.dataset.merit === 'true';
+            if (f === 'needblind') return card.dataset.needblind === 'true';
+            return true;
+          });
+
+        card.hidden = !ok;
+        if (ok) shown++;
+      }
+      empty.hidden = shown > 0;
+    }
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        chip.setAttribute(
+          'aria-pressed',
+          chip.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'
+        );
+        apply();
+      });
+    });
+
+    reset.addEventListener('click', () => {
+      chips.forEach((c) => c.setAttribute('aria-pressed', 'false'));
+      apply();
+    });
+  </script>
+</Base>

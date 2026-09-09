@@ -1,0 +1,9 @@
+---
+/**
+ * Первичный источник — кликабельный.
+ * Для вторичных агрегаторов (блоги консультантов) используй <Src2>.
+ */
+interface Props { href: string }
+const { href } = Astro.props;
+---
+<a class="src" href={href} target="_blank" rel="noopener"><slot /></a>

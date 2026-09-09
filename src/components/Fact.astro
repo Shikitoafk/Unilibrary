@@ -1,0 +1,8 @@
+---
+interface Props { label?: string }
+const { label = 'Факт' } = Astro.props;
+---
+<div class="blk">
+  <span class="tag">{label}</span>
+  <div class="blk-body"><slot /></div>
+</div>

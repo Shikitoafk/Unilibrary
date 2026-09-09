@@ -1,0 +1,8 @@
+---
+interface Props { label?: string }
+const { label = 'Не выяснено' } = Astro.props;
+---
+<div class="blk unknown">
+  <span class="tag">{label}</span>
+  <div class="blk-body"><slot /></div>
+</div>

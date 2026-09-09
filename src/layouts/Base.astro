@@ -1,0 +1,62 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  accent?: string;
+  accentDark?: string;
+  nav?: 'home' | 'compare' | null;
+}
+
+const {
+  title,
+  description = 'Глубокие разборы университетов для абитуриентов из Казахстана: факты, голоса студентов и честная оценка соответствия.',
+  accent,
+  accentDark,
+  nav = null,
+} = Astro.props;
+
+const rootStyle = accent
+  ? `--accent:${accent};--accent-dark:${accentDark ?? accent};`
+  : undefined;
+---
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Prata&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Golos+Text:wght@400;500;600;700&display=swap"
+    />
+  </head>
+  <body style={rootStyle}>
+    <header class="site-head">
+      <div class="site-head-in">
+        <a class="wordmark" href="/">Разборы университетов</a>
+        <nav class="site-nav">
+          <a href="/" aria-current={nav === 'home' ? 'page' : undefined}>Все универы</a>
+          <a href="/compare" aria-current={nav === 'compare' ? 'page' : undefined}>Сравнить</a>
+        </nav>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="site-foot">
+      <div class="site-foot-in">
+        <span>Разборы пишутся вручную по первичным источникам. Цифры стоит перепроверять перед подачей документов.</span>
+        <span><a href="/compare">Таблица сравнения</a></span>
+      </div>
+    </footer>
+  </body>
+</html>

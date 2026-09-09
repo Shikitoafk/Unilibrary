@@ -1,0 +1,9 @@
+---
+/** Перекрёстная ссылка на другой разбор. */
+interface Props { label?: string }
+const { label = 'Ср. с' } = Astro.props;
+---
+<div class="xref">
+  <span class="k">{label}</span>
+  <div class="xref-body"><slot /></div>
+</div>

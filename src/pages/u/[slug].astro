@@ -1,0 +1,191 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Fact from '../../components/Fact.astro';
+import Interp from '../../components/Interp.astro';
+import Voice from '../../components/Voice.astro';
+import UnknownBlock from '../../components/Unknown.astro';
+import Section from '../../components/Section.astro';
+import Src from '../../components/Src.astro';
+import Src2 from '../../components/Src2.astro';
+import Unver from '../../components/Unver.astro';
+import Xref from '../../components/Xref.astro';
+import Tbl from '../../components/Tbl.astro';
+import { usd, usdRange, pct, range, fitNames, fitOrder, dateRu } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const unis = await getCollection('universities');
+  return unis.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const d = entry.data;
+const { Content } = await render(entry);
+
+// Оглавление собираем из самих объявлений <Section> в теле разбора.
+// Заголовки рисует компонент, а не markdown, поэтому в headings их нет —
+// зато сырое тело даёт и номер, и якорь, и название разом.
+const toc = [...entry.body!.matchAll(
+  /<Section\s+num="([^"]+)"\s+id="([^"]+)"\s+title="([^"]+)"/g
+)].map((m) => ({ num: m[1], id: m[2], title: m[3] }));
+
+const mdxComponents = {
+  Fact,
+  Interp,
+  Voice,
+  Unknown: UnknownBlock,
+  Section,
+  Src,
+  Src2,
+  Unver,
+  Xref,
+  Tbl,
+};
+---
+
+<Base
+  title={`${d.name} — разбор`}
+  description={d.thesis}
+  accent={d.accent}
+  accentDark={d.accentDark}
+>
+  <div class="shell">
+    <header class="masthead">
+      <p class="eyebrow">
+        Deep research{d.issue ? ` · разбор №${String(d.issue).padStart(2, '0')}` : ''} ·
+        <b>для абитуриентов из Казахстана</b>
+      </p>
+      <h1 class="uni-name">{d.name}</h1>
+      <p class="thesis">{d.thesis}</p>
+
+      <div class="meta-row">
+        <span>Основан<b>{d.founded}</b></span>
+        <span>Приём<b>{pct(d.acceptanceRate)}</b></span>
+        <span>SAT, средние 50%<b>{range(d.satRange)}</b></span>
+        <span>Стоимость года<b>{usdRange(d.costOfAttendance)}</b></span>
+        <span>Средний грант<b>{usd(d.avgGrant)}</b></span>
+        <span>Покрытие нужды<b>{d.meetsFullNeed ? '100%' : '—'}</b></span>
+      </div>
+
+      <p class="profile-note">
+        Разделы «Ты × универ» и вердикт написаны под конкретный профиль:
+        <b>{d.profile}</b>. Фактическая часть от профиля не зависит.
+        Обновлено {dateRu(d.updated)}.
+      </p>
+    </header>
+
+    <nav class="toc" aria-label="Разделы разбора">
+      <div class="toc-title">Разделы</div>
+      <ol>
+        {toc.map((h) => (
+          <li><a href={`#${h.id}`}>{h.title}</a></li>
+        ))}
+      </ol>
+      <div class="toc-legend">
+        <div class="leg l-fact"><b>Факт</b>Проверяемое утверждение. Основной шрифт.</div>
+        <div class="leg l-voice"><b>Голос студента</b>Прямая речь. Курсив, крупно.</div>
+        <div class="leg l-interp"><b>Моё прочтение</b>Интерпретация, а не факт. Гротеск.</div>
+        <div class="leg l-unknown"><b>Не выяснено</b>Вопросы без ответа.</div>
+      </div>
+    </nav>
+
+    <main class="uni-body">
+      <Content components={mdxComponents} />
+    </main>
+
+    <div class="verdict">
+      <div class="verdict-h">Соответствие по измерениям · профиль: {d.profile}</div>
+      <div class="fits">
+        {fitOrder.map((key) => {
+          const f = d.fit[key];
+          const hard = key === 'admissions';
+          return (
+            <div class:list={['fit', hard && 'hard']}>
+              <span class="fit-name">{fitNames[key]}</span>
+              <span class="fit-val">{f.note}</span>
+              <span class="meter">
+                {[0, 1, 2, 3].map((i) => (
+                  <i class:list={[i < f.score && 'f']}></i>
+                ))}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+
+    <div class="sources">
+      <h2>Источники</h2>
+      <div class="src-grid">
+        {[
+          ['Официальные', d.sources.official],
+          ['Данные', d.sources.data],
+          ['Студенческие отзывы', d.sources.reviews],
+          ['Новости', d.sources.news],
+        ].map(([label, items]) =>
+          (items as { label: string; url?: string }[]).length ? (
+            <div>
+              <h3>{label}</h3>
+              <ul>
+                {(items as { label: string; url?: string }[]).map((s) => (
+                  <li>
+                    {s.url ? (
+                      <a href={s.url} target="_blank" rel="noopener">{s.label}</a>
+                    ) : (
+                      s.label
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null
+        )}
+      </div>
+      {d.sourceCaveat && (
+        <p class="src-caveat" set:html={d.sourceCaveat} />
+      )}
+    </div>
+  </div>
+
+  <script>
+    // Копирование ссылки на конкретный раздел — чтобы кидать в канал
+    // ссылку сразу на нужное место разбора.
+    document.querySelectorAll<HTMLButtonElement>('.copylink').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const url = `${location.origin}${location.pathname}#${btn.dataset.anchor}`;
+        const done = () => {
+          const prev = btn.textContent;
+          btn.textContent = 'Скопировано';
+          setTimeout(() => { btn.textContent = prev; }, 1400);
+        };
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(url).then(done, done);
+        } else {
+          done();
+        }
+      });
+    });
+
+    // Подсветка текущего раздела в оглавлении.
+    const links = new Map<string, HTMLAnchorElement>();
+    document.querySelectorAll<HTMLAnchorElement>('.toc a[href^="#"]').forEach((a) => {
+      links.set(decodeURIComponent(a.getAttribute('href')!.slice(1)), a);
+    });
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('.uni-body section'));
+    if ('IntersectionObserver' in window && sections.length) {
+      const visible = new Set<string>();
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) visible.add(e.target.id);
+            else visible.delete(e.target.id);
+          }
+          const first = sections.find((s) => visible.has(s.id))?.id;
+          links.forEach((a, id) => a.classList.toggle('on', id === first));
+        },
+        { rootMargin: '-10% 0px -70% 0px' }
+      );
+      sections.forEach((s) => io.observe(s));
+    }
+  </script>
+</Base>
