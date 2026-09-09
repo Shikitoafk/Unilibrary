@@ -400,6 +400,10 @@ blockquote{
 .src{text-decoration:none;border-bottom:1px solid var(--rule)}
 .src:hover{color:var(--accent);border-bottom-color:var(--accent)}
 .src2::before{content:"\25C7\00A0";font-size:9px;vertical-align:1px}
+/* вторичный источник со ссылкой: пунктир вместо сплошной линии — читатель
+   может дойти до него, но пометка предупреждает, что данные не первичные */
+a.src2{text-decoration:none;border-bottom:1px dotted var(--rule-strong, var(--rule))}
+a.src2:hover{color:var(--warn);border-bottom-color:var(--warn)}
 .unver{
   font-family:var(--sans);
   font-size:11px;
