@@ -74,6 +74,10 @@ const mdxComponents = {
       </p>
     </header>
 
+    <!-- обёртка растягивается на высоту основного текста и ограничивает
+         липкое позиционирование: без неё оглавление продолжает «липнуть»
+         поверх вердикта и источников -->
+    <div class="toc-col">
     <nav class="toc" aria-label="Разделы разбора">
       <div class="toc-title">Разделы</div>
       <ol>
@@ -88,6 +92,7 @@ const mdxComponents = {
         <div class="leg l-unknown"><b>Не выяснено</b>Вопросы без ответа.</div>
       </div>
     </nav>
+    </div>
 
     <main class="uni-body">
       <Content components={mdxComponents} />
