@@ -808,3 +808,60 @@ tr.tot td{
   html{scroll-behavior:auto}
   *{transition:none!important}
 }
+
+/* ==========================================================================
+   Печать и экспорт в PDF
+   Разбор превращается в документ: без навигации, в одну колонку, на белом.
+   Метки регистров остаются — они и на бумаге несут смысл.
+   ========================================================================== */
+@media print{
+  /* печатаем всегда в светлой палитре, даже если у читателя тёмная тема */
+  :root,:root[data-theme="dark"]{
+    --paper:#FFFFFF; --sunk:#F2F0EB;
+    --ink:#14130F; --ink-soft:#4A453D; --ink-faint:#6E685F;
+    --rule:#CFCABF; --rule-soft:#E4E0D7;
+    --voice-ink:#12564F; --warn:#8A4409;
+    --marg:0px; --gut:0px;
+  }
+  @page{margin:16mm 14mm}
+
+  body{background:#fff;font-size:10.5pt;line-height:1.5}
+  .site-head,.site-foot,.toc,.copylink{display:none!important}
+  .shell{display:block;max-width:none;padding:0}
+  main{max-width:none}
+
+  /* блоки в одну колонку: метка над текстом */
+  .blk,.xref,.sec-head{display:block}
+  .blk > .tag,.xref .k{
+    display:block;
+    text-align:left;
+    padding:0;
+    margin:0 0 3px;
+    font-size:8pt;
+  }
+  .uni-body h3,.uni-body h4,.uni-body > p{padding-left:0}
+  .uni-body h3::before{display:none}
+
+  .uni-name{font-size:30pt}
+  .thesis{font-size:12pt}
+  .sec-head{border-bottom:1.5pt solid var(--ink);margin-bottom:14pt}
+  .sec-head .num{display:inline;font-size:12pt;margin-right:8pt}
+  .sec-head h2{display:inline;font-size:17pt}
+
+  /* разрывы страниц по смыслу, а не посреди мысли */
+  .uni-body section{break-before:page;margin-bottom:0}
+  .uni-body section:first-child{break-before:auto}
+  .blk,.xref,.tbl-wrap,blockquote,.fit{break-inside:avoid}
+  h3,h4{break-after:avoid}
+  .verdict,.sources{break-before:page}
+
+  .tbl-wrap{overflow:visible}
+  table{font-size:8.5pt}
+  .blk.voice .blk-body{font-size:12pt}
+  .blk.interp .blk-body{font-size:10pt}
+
+  /* ссылки на бумаге не кликаются — показываем адрес источника */
+  a.src::after,a.src2::after{content:" (" attr(href) ")";font-size:7pt;color:var(--ink-faint)}
+  .src-grid a::after{content:" — " attr(href);font-size:7.5pt;color:var(--ink-faint)}
+  .xref a::after{content:""}
+}

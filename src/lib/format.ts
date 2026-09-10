@@ -66,6 +66,9 @@ export const fitOrder = [
   'admissions',
 ] as const;
 
+/** «10 сентября 2026» — без хвостового «г.», чтобы не плодить двойную точку в конце фразы. */
 export function dateRu(d: Date): string {
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  return d
+    .toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    .replace(/\s*г\.$/, '');
 }
