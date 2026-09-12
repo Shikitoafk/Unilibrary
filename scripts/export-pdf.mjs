@@ -43,7 +43,7 @@ function titleOf(slug) {
   try {
     const src = readFileSync(join(CONTENT, `${slug}.mdx`), 'utf8');
     const m = src.match(/^name:\s*(.+)$/m);
-    return m ? m[1].trim() : slug;
+    return m ? m[1].trim().replace(/^(["'])(.*)\1$/, '$2') : slug;
   } catch {
     return slug;
   }
@@ -78,6 +78,8 @@ try {
       [
         '--headless',
         '--disable-gpu',
+        '--no-first-run',
+        `--user-data-dir=${resolve('.chrome-pdf-profile')}`,
         '--no-pdf-header-footer',
         `--print-to-pdf=${file}`,
         `http://localhost:${PORT}/u/${slug}`,
