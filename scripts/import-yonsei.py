@@ -141,7 +141,10 @@ notes = {
 }
 
 def clean(text):
-    text = re.sub(r'\b(?:yonsei|uic|kstudytimes|gokoreastudy|collegesimplified|mystudy-korea|wikipedia|ielts|globaladmissions|libertify|educatly|universityworldnews|reddit|gokorea)\s*\+?\d*', '', text, flags=re.I)
+    text = re.sub(r'(?:uic\.)?yonsei\.ac(?:\+\d+)?', '', text, flags=re.I)
+    text = re.sub(r'(?<=[.\w])(?:kstudytimes|gokoreastudy|collegesimplified|mystudy-korea|wikipedia|ielts|globaladmissions|libertify|educatly|universityworldnews|reddit|gokorea)(?:\+\d+)?\b', '', text, flags=re.I)
+    # Citation debris must never remove university names or exam names in prose.
+    text = re.sub(r'\b(?:yonsei|uic|kstudytimes|gokoreastudy|collegesimplified|mystudy-korea|wikipedia|ielts|globaladmissions|libertify|educatly|universityworldnews|reddit|gokorea)\+\d+', '', text, flags=re.I)
     text = re.sub(r'\.\.\.[A-Za-z0-9_-]+(?:\+\d+)?', '', text)
     text = re.sub(r'\.{2,}[A-Za-z0-9_-]+', '', text)
     text = re.sub(r'\s+([,.;:])', r'\1', text)
@@ -161,6 +164,8 @@ def parse_section(sid, title, start, end, n):
     raw = '\n'.join(lines)
     for h in sorted(headings, key=len, reverse=True):
         raw = re.sub(r'(?m)^'+re.escape(h)+r'\s*$', '\n@@'+h+'@@\n', raw)
+    raw = re.sub(r'(?m)^UNKNOWN\s*$', 'UNKNOWN:', raw)
+    raw = re.sub(r'(?m)^YONSEI UNIVERSITY.*$', '', raw)
     raw = re.sub(r'\s*(FACT:|INTERPRETATION:|UNKNOWN:|STUDENT EXPERIENCE:)\s*', r'\n\1 ', raw)
     tokens = re.split(r'(@@[^@]+@@|\bFACT:|\bINTERPRETATION:|\bUNKNOWN:|\bSTUDENT EXPERIENCE:)', raw)
     out = [f'<Section num="{n:02}" id="{sid}" title="{title}">', notes[sid]]
@@ -175,15 +180,14 @@ def parse_section(sid, title, start, end, n):
         if token in ('FACT:','INTERPRETATION:','UNKNOWN:','STUDENT EXPERIENCE:'):
             mode = {'FACT:':'Fact','INTERPRETATION:':'Interp','UNKNOWN:':'Unknown','STUDENT EXPERIENCE:':'Interp'}[token]
             continue
-        token = clean(token)
         if not token or token.startswith('PAGE '): continue
-        chunks = re.split(r'\n\s*\n|(?=●)', token)
+        chunks = re.split(r'\n\s*\n|(?=[●•])|\n(?=\d+\.\s)', token)
         body=[]; inlist=False
         for chunk in chunks:
             chunk=clean(chunk)
             if not chunk: continue
-            bullet = chunk.startswith('●') or chunk.startswith('- ')
-            chunk = chunk.lstrip('●- ').strip()
+            bullet = chunk.startswith(('●', '•', '- ')) or bool(re.match(r'^\d+\.\s', chunk))
+            chunk = re.sub(r'^(?:[●•]|- |\d+\.\s)\s*', '', chunk).strip()
             if bullet and not inlist: body.append('<ul>'); inlist=True
             if not bullet and inlist: body.append('</ul>'); inlist=False
             body.append(('<li>' if bullet else '<p>')+esc(chunk)+('</li>' if bullet else '</p>'))
@@ -196,5 +200,15 @@ def parse_section(sid, title, start, end, n):
 
 body = [parse_section(sid, title, start, end, n) for n,(sid,title,start,end) in enumerate(sections,1)]
 result = meta + '\n\n' + '\n\n'.join(body)
+# Editorial corrections apply to both the website and print edition.
+result = re.sub(r'<Fact[^>]*><p>Yonsei (?:University generally requires:|требует:).*?</Fact>', verify('Для UIC нет универсального опубликованного порога GPA или SAT/ACT. Набор 2027 требует подтверждения английского либо допустимого эквивалента; IELTS 8.0 не является общим обязательным минимумом. Требования других колледжей необходимо читать отдельно.', official['admissions']), result, flags=re.S)
+result = re.sub(r'<li>English proficiency \(TOEFL.*?</li>', '<li>Готовность учиться на английском; конкретные документы зависят от маршрута и года набора.</li>', result)
+result = re.sub(r'<Interp><p>7/10 — Competitive,.*?</Interp>', '<Interp><p>Поступление конкурсное. Сопоставимых данных недостаточно, чтобы объявлять Yonsei более доступным, чем NYUAD, или обещать хорошие шансы по одним оценкам и английскому. Сначала выбирай конкретный маршрут UIC и проверяй его требования.</p></Interp>', result)
+def replace_block(needle, replacement):
+    global result
+    result = re.sub(r'<(Fact|Interp)(?: [^>]*)?>.*?</\1>', lambda m: replacement if needle in m[0] else m[0], result, flags=re.S)
+replace_block('Путь Основная идея', '<Fact label="Маршруты обучения"><p>Для международного абитуриента важно различать несколько программ:</p><ul><li><b>Regular International Undergraduate Track:</b> поступление в обычные колледжи Yonsei; язык и условия определяются программой.</li><li><b>Underwood International College (UIC):</b> англоязычный бакалавриат с моделью liberal arts.</li><li><b>Global Leaders College (GLC):</b> отдельный колледж, преимущественно с обучением на корейском.</li><li><b>Summer School / exchange:</b> временная мобильность, а не полный бакалавриат.</li></ul></Fact>')
+replace_block('Division Примеры majors', '<Fact label="Структура UIC"><p>В актуальном меню UIC выделены три division:</p><ul><li><b>Underwood Division:</b> Comparative Literature and Culture, Economics, International Studies, Political Science and International Relations, Life Science and Biotechnology.</li><li><b>Humanities, Arts, and Social Sciences Division:</b> Asian Studies, Culture and Design Management, Information and Interaction Design, Creative Technology Management, Justice and Civil Leadership, Quantitative Risk Management, Science, Technology, and Policy, Sustainable Development and Cooperation.</li><li><b>Integrated Science and Engineering Division:</b> Nano Science and Engineering, Energy and Environmental Science and Engineering, Bio-Convergence.</li></ul><p><Src href="'+official['faq']+'">Официальная структура UIC</Src></p></Fact>')
+replace_block('Компонент Что университет хочет дать', '<Interp><p>Модель Yonsei соединяет несколько преимуществ: городской контекст Сеула, корейскую сеть SKY, англоязычный UIC, медицинскую инфраструктуру Severance, большой выбор дисциплин и международную мобильность.</p><p>Главный компромисс: международный колледж существует внутри корейского университета. Это интересно человеку, который хочет связать обучение с Кореей или Восточной Азией; ожидание полностью англоязычной среды за пределами занятий может не оправдаться.</p></Interp>')
 (ROOT/'src/content/universities/yonsei.mdx').write_text(result, encoding='utf-8')
 print(f'Created yonsei.mdx: {len(body)} sections, {len(result)} characters')

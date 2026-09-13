@@ -56,6 +56,9 @@ const mdxComponents = {
         <b>для абитуриентов из Казахстана</b>
       </p>
       <h1 class="uni-name">{d.name}</h1>
+      {entry.id === 'yonsei' && (
+        <p class="pdf-download"><a href="/downloads/yonsei-university.pdf" download>Скачать полный разбор в PDF ↗</a></p>
+      )}
       <p class="thesis">{d.thesis}</p>
 
       <div class="meta-row">
