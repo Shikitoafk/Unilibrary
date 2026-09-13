@@ -142,6 +142,9 @@ notes = {
 
 def clean(text):
     text = re.sub(r'\b(?:yonsei|uic|kstudytimes|gokoreastudy|collegesimplified|mystudy-korea|wikipedia|ielts|globaladmissions|libertify|educatly|universityworldnews|reddit|gokorea)\s*\+?\d*', '', text, flags=re.I)
+    text = re.sub(r'\.\.\.[A-Za-z0-9_-]+(?:\+\d+)?', '', text)
+    text = re.sub(r'\.{2,}[A-Za-z0-9_-]+', '', text)
+    text = re.sub(r'\s+([,.;:])', r'\1', text)
     text = text.replace('English-based', 'англоязычный').replace('English-taught', 'англоязычный').replace('highly competitive admissions','конкурсный приём')
     text = text.replace('Underwood International University','Underwood International College')
     text = text.replace('ASD (Applied Science and Engineering Division)', 'ISED (Integrated Science and Engineering Division)')
