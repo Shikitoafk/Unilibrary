@@ -12,6 +12,7 @@ const countries = [...new Set(unis.map((u) => u.data.country))].sort();
 const strengths = [...new Set(unis.flatMap((u) => u.data.strengths))].sort((a, b) =>
   a.localeCompare(b, 'ru')
 );
+const scholarships = await getCollection('scholarships');
 ---
 
 <Base title="Разборы университетов" nav="home">
@@ -29,6 +30,20 @@ const strengths = [...new Set(unis.flatMap((u) => u.data.strengths))].sort((a, b
         обновляется по мере выхода в канале
       </p>
     </div>
+
+    {scholarships.length > 0 && (
+      <section class="scholarship-shelf" aria-labelledby="scholarship-heading">
+        <h2 id="scholarship-heading">Стипендии и финансирование</h2>
+        {scholarships.map(({ id, data }) => (
+          <article>
+            <span class="eyebrow">{data.country} · стипендиальная программа</span>
+            <h3><a href={`/scholarships/${id}`}>{data.name} ↗</a></h3>
+            <p>{data.thesis}</p>
+            <a class="shelf-pdf" href={data.pdf} download>Скачать полный разбор в PDF</a>
+          </article>
+        ))}
+      </section>
+    )}
 
     <div class="filters" role="group" aria-label="Фильтры">
       {countries.length > 1 && (
@@ -175,3 +190,11 @@ const strengths = [...new Set(unis.flatMap((u) => u.data.strengths))].sort((a, b
     });
   </script>
 </Base>
+
+<style>
+  .scholarship-shelf { margin: 0 0 38px; padding: 24px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .scholarship-shelf h2 { font-size: 15px; margin: 0 0 20px; }
+  .scholarship-shelf h3 { font-size: clamp(23px, 4vw, 32px); margin: 8px 0; }
+  .scholarship-shelf p { max-width: 760px; line-height: 1.6; }
+  .shelf-pdf { display: inline-block; margin-top: 8px; font-size: 13px; text-underline-offset: 4px; }
+</style>

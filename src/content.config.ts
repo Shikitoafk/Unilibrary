@@ -81,4 +81,20 @@ const universities = defineCollection({
   }),
 });
 
-export const collections = { universities };
+const scholarships = defineCollection({
+  loader: glob({ pattern: ['**/*.mdx', '!**/_*.mdx'], base: './src/content/scholarships' }),
+  schema: z.object({
+    name: z.string(),
+    country: z.string(),
+    thesis: z.string(),
+    accent: z.string(),
+    accentDark: z.string(),
+    profile: z.string(),
+    updated: z.coerce.date(),
+    cycle: z.string(),
+    pdf: z.string().regex(/^\/downloads\/[a-z0-9-]+\.pdf$/),
+    sources: z.array(z.object({ label: z.string(), url: z.string().url() })),
+  }),
+});
+
+export const collections = { universities, scholarships };

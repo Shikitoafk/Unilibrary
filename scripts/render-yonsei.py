@@ -1,6 +1,6 @@
 """Reproducible editorial PDF from the same MDX used by UniLibrary."""
 from pathlib import Path
-import re, html, shutil
+import re, html, shutil, argparse, json
 from xml.etree import ElementTree as ET
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -14,10 +14,16 @@ from reportlab.platypus.tableofcontents import TableOfContents
 from reportlab.lib.units import mm
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT/'exports/Yonsei University — разбор.pdf'
-raw = (ROOT/'src/content/universities/yonsei.mdx').read_text(encoding='utf-8')
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--edition', type=Path, help='JSON settings for another UniLibrary edition; defaults to Yonsei.')
+args = parser.parse_args()
+edition = json.loads(args.edition.read_text(encoding='utf-8')) if args.edition else {}
+NAME = edition.get('name', 'Yonsei University')
+OUT = ROOT/'exports'/f'{NAME} — разбор.pdf'
+raw = (ROOT/edition.get('content', 'src/content/universities/yonsei.mdx')).read_text(encoding='utf-8')
 meta, body = raw.split('---', 2)[1:]
-BLUE = colors.HexColor('#153E76')
+ACCENT = edition.get('accent', '#153E76')
+BLUE = colors.HexColor(ACCENT)
 INK = colors.HexColor('#252A30')
 MUTED = colors.HexColor('#6F757C')
 RULE = colors.HexColor('#CDD2D6')
@@ -44,7 +50,7 @@ sty('deck',fontName='Sans',fontSize=10.8,leading=16,textColor=MUTED,spaceAfter=1
 sty('small',fontName='Sans',fontSize=8.2,leading=12,textColor=MUTED)
 sty('sourceLabel',fontName='SansBold',fontSize=7.3,leading=10,textColor=BLUE,spaceBefore=5,spaceAfter=2,keepWithNext=True)
 sty('quote',fontName='SerifItalic',fontSize=19,leading=27,textColor=BLUE,spaceAfter=20)
-sty('title',fontSize=48,leading=54,textColor=BLUE,spaceAfter=20)
+sty('title',fontSize=edition.get('titleSize',48),leading=edition.get('titleLeading',54),textColor=BLUE,spaceAfter=20)
 sty('toc',fontName='Serif',fontSize=12,leading=17,spaceBefore=8,spaceAfter=8)
 
 descriptions = {
@@ -58,6 +64,7 @@ descriptions = {
 'criticism':'Языковой барьер, учебное давление, стоимость и интеграция: вопросы, которые стоит задать заранее.',
 'you':'Личный выбор для biomedical / STEM абитуриента из Казахстана: подходящие сценарии и компромиссы.',
 'verdict':'Окончательное решение зависит от конкретной программы, кампуса, финансирования и твоих планов.'}
+descriptions.update(edition.get('descriptions', {}))
 
 sources=[]
 for label,url in re.findall(r'\{label: "([^"]+)", url: "([^"]+)"\}',meta):
@@ -67,17 +74,17 @@ def source_number(url):
         if u==url:return i
     sources.append(('Дополнительный источник',url)); return len(sources)
 def inline(s):
-    s=re.sub(r'<Src href="([^"]+)">.*?</Src>',lambda m: '<a color="#153E76" href="'+html.escape(m[1],quote=True)+'">['+str(source_number(m[1]))+']</a>',s,flags=re.S)
+    s=re.sub(r'<Src href="([^"]+)">.*?</Src>',lambda m: '<a color="'+ACCENT+'" href="'+html.escape(m[1],quote=True)+'">['+str(source_number(m[1]))+']</a>',s,flags=re.S)
     s=re.sub(r'<(?!/?(?:b|i|a|br|super)\b)[^>]+>','',s)
     s=html.unescape(s)
     s=re.sub(r'&(?!#?\w+;)', '&amp;', s)
-    return s.replace('—','-').replace('–','-').replace('\u2011','-')
+    return s.replace('—','-').replace('–','-').replace('\u2011','-').replace('→',' / ')
 def paragraph(s,style='body'):
     return Paragraph(inline(s),styles[style])
 
 class Doc(BaseDocTemplate):
     def __init__(self,path):
-        super().__init__(str(path),pagesize=(WIDTH,HEIGHT),title='Yonsei University | UniLibrary',author='UniLibrary',leftMargin=LEFT,rightMargin=RIGHT,topMargin=22*mm,bottomMargin=20*mm)
+        super().__init__(str(path),pagesize=(WIDTH,HEIGHT),title=NAME+' | UniLibrary',author='UniLibrary',leftMargin=LEFT,rightMargin=RIGHT,topMargin=22*mm,bottomMargin=20*mm)
         self.chapter=''
         self.addPageTemplates(PageTemplate(id='main',frames=[Frame(LEFT,20*mm,CW,255*mm,leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPage=self.decorate))
     def beforeDocument(self):self.chapter=''
@@ -85,7 +92,7 @@ class Doc(BaseDocTemplate):
         c.saveState()
         if doc.page>1:
             c.setFont('Sans',7);c.setFillColor(MUTED)
-            c.drawString(LEFT,HEIGHT-12*mm,'UNILIBRARY  /  YONSEI UNIVERSITY')
+            c.drawString(LEFT,HEIGHT-12*mm,'UNILIBRARY  /  '+NAME.upper())
             c.setStrokeColor(RULE);c.setLineWidth(.4);c.line(LEFT,HEIGHT-15*mm,WIDTH-RIGHT,HEIGHT-15*mm)
         c.setStrokeColor(RULE);c.line(LEFT,14*mm,WIDTH-RIGHT,14*mm)
         c.setFillColor(MUTED);c.setFont('Sans',7)
@@ -99,15 +106,16 @@ class Doc(BaseDocTemplate):
             self.notify('TOCEntry',(0,f.getPlainText(),self.page,f.bookmark))
 
 story=[]
-story.append(paragraph('UNILIBRARY  /  UNIVERSITY PORTRAITS','label'))
+story.append(paragraph(edition.get('series','UNILIBRARY  /  UNIVERSITY PORTRAITS'),'label'))
 story.append(Spacer(1,18*mm))
-story.append(paragraph('Yonsei<br/>University','title'))
-story.append(paragraph('Южная Корея · Сеул / Инчхон<br/>Полный разбор для абитуриента из Казахстана','deck'))
+story.append(paragraph(edition.get('coverTitle','Yonsei<br/>University'),'title'))
+story.append(paragraph(edition.get('coverDeck','Южная Корея · Сеул / Инчхон<br/>Полный разбор для абитуриента из Казахстана'),'deck'))
 story.append(HRFlowable(width='100%',thickness=1.3,color=BLUE,spaceAfter=18))
-story.append(paragraph('Если убрать престиж и красивый сайт -<br/>захотел бы ты провести здесь<br/>четыре года своей жизни?','quote'))
-story.append(paragraph('Англоязычный колледж, большая корейская университетская культура и медицинская исследовательская среда. Главный вопрос - какой именно Yonsei получишь ты.','body'))
+story.append(paragraph(edition.get('coverQuote','Если убрать престиж и красивый сайт -<br/>захотел бы ты провести здесь<br/>четыре года своей жизни?'),'quote'))
+story.append(paragraph(edition.get('coverText','Англоязычный колледж, большая корейская университетская культура и медицинская исследовательская среда. Главный вопрос - какой именно Yonsei получишь ты.'),'body'))
 story.append(Spacer(1,12*mm))
 rows=[('ФОКУС','Биомедицина / STEM / undergraduate'),('МАРШРУТ','UIC с отдельными замечаниями о других колледжах'),('ВНУТРИ','10 разделов · условия · риски · личное соответствие'),('РЕДАКЦИЯ','13 сентября 2026')]
+rows=edition.get('coverRows', rows)
 table=Table([[paragraph(a,'small'),paragraph(b,'body')] for a,b in rows],colWidths=[35*mm,CW-35*mm])
 table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('LINEABOVE',(0,0),(-1,0),.5,RULE),('LINEBELOW',(0,-1),(-1,-1),.5,RULE),('TOPPADDING',(0,0),(-1,-1),9),('BOTTOMPADDING',(0,0),(-1,-1),7)]))
 story.extend([table,PageBreak(),paragraph('Как читать этот выпуск','chapter')])
@@ -141,16 +149,16 @@ for num,sid,title,content in sections:
 
 story.append(PageBreak())
 h=paragraph('Источники и примечания','chapter');h.bookmark='sources';story.append(h)
-story.append(paragraph('Основа выпуска - предоставленный автором PDF Yonsei University. Официальные страницы ниже позволяют проверить программу и актуальные правила. Номера в тексте кликабельны. Для поступления используй документы своего маршрута и года набора.','deck'))
+story.append(paragraph(edition.get('sourceIntro','Основа выпуска - предоставленный автором PDF Yonsei University. Официальные страницы ниже позволяют проверить программу и актуальные правила. Номера в тексте кликабельны. Для поступления используй документы своего маршрута и года набора.'),'deck'))
 for i,(label,url) in enumerate(sources,1):
     story.append(paragraph(f'{i:02d}  {label}','sourceLabel'))
-    story.append(Paragraph('<a color="#153E76" href="'+html.escape(url,quote=True)+'">'+html.escape(url)+'</a>',styles['small']))
+    story.append(Paragraph('<a color="'+ACCENT+'" href="'+html.escape(url,quote=True)+'">'+html.escape(url)+'</a>',styles['small']))
 story.append(Spacer(1,3*mm))
 story.append(paragraph('ГРАНИЦЫ ВЫВОДОВ','label'))
-story.append(paragraph('Выпуск сохраняет авторский анализ и открытые вопросы. Отзывы о социальной среде не описывают всех студентов. Рейтинговые оценки соответствия являются мнением автора, а не вероятностью поступления. Данные graduate-программ, GKS и обычных колледжей нельзя автоматически переносить на UIC. Условия стипендии необходимо читать в индивидуальном offer.','small'))
+story.append(paragraph(edition.get('sourceCaveat','Выпуск сохраняет авторский анализ и открытые вопросы. Отзывы о социальной среде не описывают всех студентов. Рейтинговые оценки соответствия являются мнением автора, а не вероятностью поступления. Данные graduate-программ, GKS и обычных колледжей нельзя автоматически переносить на UIC. Условия стипендии необходимо читать в индивидуальном offer.'),'small'))
 OUT.parent.mkdir(exist_ok=True)
 Doc(OUT).multiBuild(story)
-public=ROOT/'public/downloads/yonsei-university.pdf';public.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(OUT,public)
+public=ROOT/edition.get('public','public/downloads/yonsei-university.pdf');public.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(OUT,public)
 from pypdf import PdfReader
 r=PdfReader(OUT)
 print(f'{len(r.pages)} pages; {OUT.stat().st_size} bytes; {sum(len(p.extract_text() or "") for p in r.pages)} characters')
