@@ -37,10 +37,12 @@ const universities = defineCollection({
     // номер выпуска в канале, если есть
     issue: z.number().int().optional(),
     updated: z.coerce.date(),
+    pdf: z.string().regex(/^\/downloads\/[a-z0-9-]+\.pdf$/).optional(),
 
     // ---- поступление ----
     acceptanceRate: z.number().nullable(),
     acceptanceNote: z.string().optional(),
+    statsNote: z.string().optional(),
     satRange: z.tuple([z.number(), z.number()]).nullable(),
     actRange: z.tuple([z.number(), z.number()]).nullable(),
     testPolicy: z.enum(['required', 'optional', 'blind', 'unknown']),

@@ -56,8 +56,8 @@ const mdxComponents = {
         <b>для абитуриентов из Казахстана</b>
       </p>
       <h1 class="uni-name">{d.name}</h1>
-      {entry.id === 'yonsei' && (
-        <p class="pdf-download"><a href="/downloads/yonsei-university.pdf" download>Скачать полный разбор в PDF ↗</a></p>
+      {(d.pdf || entry.id === 'yonsei') && (
+        <p class="pdf-download"><a href={d.pdf || '/downloads/yonsei-university.pdf'} download>Скачать полный разбор в PDF ↗</a></p>
       )}
       <p class="thesis">{d.thesis}</p>
 
@@ -70,6 +70,7 @@ const mdxComponents = {
         <span>Покрытие нужды<b>{d.meetsFullNeed ? '100%' : '—'}</b></span>
       </div>
 
+      {d.statsNote && <p class="profile-note">{d.statsNote}</p>}
       <p class="profile-note">
         Разделы «Ты × универ» и вердикт написаны под конкретный профиль:
         <b>{d.profile}</b>. Фактическая часть от профиля не зависит.
