@@ -48,7 +48,7 @@ sty('h3',fontName='SerifBold',fontSize=15,leading=19,spaceBefore=17,spaceAfter=9
 sty('chapter',fontSize=28,leading=33,spaceAfter=16,keepWithNext=True)
 sty('deck',fontName='Sans',fontSize=10.8,leading=16,textColor=MUTED,spaceAfter=18)
 sty('small',fontName='Sans',fontSize=8.2,leading=12,textColor=MUTED)
-sty('sourceLabel',fontName='SansBold',fontSize=7.3,leading=10,textColor=BLUE,spaceBefore=5,spaceAfter=2,keepWithNext=True)
+sty('sourceLabel',fontName='SansBold',fontSize=7.3,leading=10,textColor=BLUE,spaceBefore=edition.get('sourceLabelGap',5),spaceAfter=2,keepWithNext=True)
 sty('sourceUrl',fontName='Sans',fontSize=8.2,leading=12,textColor=MUTED,spaceAfter=edition.get('sourceGap',7))
 sty('quote',fontName='SerifItalic',fontSize=19,leading=27,textColor=BLUE,spaceAfter=20)
 sty('title',fontSize=edition.get('titleSize',48),leading=edition.get('titleLeading',54),textColor=BLUE,spaceAfter=20)

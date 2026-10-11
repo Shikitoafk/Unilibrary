@@ -55,7 +55,7 @@ const universities = defineCollection({
     avgGrant: z.number().nullable(),
     avgPackage: z.number().nullable(),
     meritAid: z.boolean(),
-    needBlind: z.boolean().default(false),
+    needBlind: z.boolean().nullable().default(false),
 
     // ---- профиль ----
     strengths: z.array(z.string()).default([]),

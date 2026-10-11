@@ -7,7 +7,7 @@ const unis = (await getCollection('universities')).sort((a, b) =>
   a.data.name.localeCompare(b.data.name, 'ru')
 );
 
-const yes = (v: boolean) => (v ? 'да' : 'нет');
+const yes = (v: boolean | null) => (v === null ? 'не подтверждено' : v ? 'да' : 'нет');
 ---
 
 <Base title="Сравнение университетов" nav="compare">
